@@ -6,17 +6,45 @@ import StudentTable from "./StudentTable";
 function Students() {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState();
 
+  // Effect to fetch the user
   useEffect(() => {
+    const getUser = async () => {
+      const { data: user, error } = await supabase.auth.getUser();
+
+      if (error) {
+        console.error("Error getting session: ", error.message);
+        return;
+      }
+
+      if (user) {
+        setUser(user.user);
+      }
+    };
+
+    getUser();
+  }, []);
+
+  // Effect to fetch students, depending on user
+  useEffect(() => {
+    // Make sure user is not null
+    if (!user) return;
+
     const fetchStudents = async () => {
       setLoading(true);
-      const { data, error } = await supabase.from("students").select(`
-            id,
-            student_name,
-            currency_amount,
-            classroom_id,
-            classroom: classroom_id ( name, currency_name )
-        `);
+      const { data, error } = await supabase
+        .from("students")
+        .select(
+          `
+              id,
+              student_name,
+              currency_amount,
+              classroom_id,
+              classroom: classroom_id ( name, currency_name )
+          `
+        )
+        .eq("user_id", user.id);
 
       if (error) {
         console.error("Error fetching students:", error.message);
@@ -27,7 +55,7 @@ function Students() {
     };
 
     fetchStudents();
-  }, []);
+  }, [user]);
 
   if (loading) return <div>Loading...</div>;
 

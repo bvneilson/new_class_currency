@@ -8,13 +8,36 @@ function NewTransaction() {
   const [amount, setAmount] = useState(0);
   const [reason, setReason] = useState("");
   const navigate = useNavigate();
+  const [user, setUser] = useState();
 
+  // Effect to fetch the user
   useEffect(() => {
-    // Fetch students for dropdown selection
+    const getUser = async () => {
+      const { data: user, error } = await supabase.auth.getUser();
+
+      if (error) {
+        console.error("Error getting session: ", error.message);
+        return;
+      }
+
+      if (user) {
+        setUser(user.user);
+      }
+    };
+
+    getUser();
+  }, []);
+
+  // Effect to fetch students, depending on user
+  useEffect(() => {
+    // Make sure user is not null
+    if (!user) return;
+
     const fetchStudents = async () => {
       const { data, error } = await supabase
         .from("students")
-        .select("id, student_name");
+        .select("id, student_name")
+        .eq("user_id", user.id);
 
       if (error) {
         console.error("Error fetching students: ", error.message);
@@ -27,7 +50,7 @@ function NewTransaction() {
     };
 
     fetchStudents();
-  }, []);
+  }, [user]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -37,6 +60,7 @@ function NewTransaction() {
         student_id: selectedStudentId,
         amount: amount,
         reason: reason,
+        user_id: user.id,
       },
     ]);
 
