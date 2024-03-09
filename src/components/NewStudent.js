@@ -10,11 +10,30 @@ function NewStudent() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    const getUser = async () => {
+      const { data: user, error } = await supabase.auth.getUser();
+
+      if (user) {
+        setUser(user.user);
+      }
+
+      if (error) {
+        console.error("Error getting session: ", error.message);
+      }
+    };
+
+    getUser();
+  }, []);
+
+  useEffect(() => {
+    if (!user) return;
+
     // Fetch classrooms for dropdown selection
     const fetchClassrooms = async () => {
       const { data, error } = await supabase
         .from("classrooms")
-        .select("id, name");
+        .select("id, name")
+        .eq("teacher_id", user.id);
 
       if (error) {
         console.error("Error fetching classrooms: ", error.message);
@@ -41,7 +60,7 @@ function NewStudent() {
     };
 
     getUser();
-  }, []);
+  }, [user]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
